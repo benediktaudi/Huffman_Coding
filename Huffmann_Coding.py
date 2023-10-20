@@ -1,0 +1,173 @@
+import sys
+import heapq
+
+class Node:
+    def __init__(self, character, amount):
+        self.character = character
+        self.amount = amount
+        self.left_child = None
+        self.right_child = None
+        self.bit = ""
+
+    def __lt__(self, other):
+        return self.amount < other.amount
+
+    def has_character(self):
+        if self.left_child is None and self.right_child is None:
+            return True
+
+def get_frequency(data):
+    storage = dict()
+    for character in data:
+        if character in storage:
+            storage[character] += 1
+        else:
+            storage[character] = 1
+    return storage
+
+def build_huffman_tree(sorted_queue):
+    while len(sorted_queue) > 1:
+        # next step: take the two nodes with the lowest frequency from the priority_queue
+        # pop out the two nodes with the lowest frequency and fetching their frequency as well as the node
+        amount1, node1 = heapq.heappop(sorted_queue)
+        amount2, node2 = heapq.heappop(sorted_queue)
+        # create new node with the frequency equal to the sum of the two nodes and with the children nodes being the nodes fetched earlier
+        amount_new_node = amount1 + amount2
+        new_node = Node("internal", amount_new_node)
+
+        if amount1 < amount2:
+            new_node.left_child = node1
+            new_node.right_child = node2
+            # the support suggested to add the 0/1 depending on left/right child to the bits from the nodes above
+            node1.bit = new_node.bit + "0"
+            node2.bit = new_node.bit + "1"
+
+        else:
+            new_node.left_child = node2
+            new_node.right_child = node1
+            node2.bit = new_node.bit + "0"
+            node1.bit = new_node.bit + "1"
+        heapq.heappush(sorted_queue, (amount_new_node, new_node))
+    return new_node
+
+def print_huffman_tree(node, indent=""):
+    if node is None:
+        return
+
+    # Print the current node
+    print(indent + "Character:", node.character)
+    print(indent + "Amount:", node.amount)
+    print(indent + "Bit-String: ", node.bit)
+
+    # Recursively print the left and right subtrees
+    print_huffman_tree(node.left_child, indent + "  |")
+    print_huffman_tree(node.right_child, indent + "  |")
+
+def encode(character, node):
+    if node is None:
+        #print("Stopped")
+        return None
+
+    if node.character == character:
+        #print("Found character")
+        #print(node.bit)
+        return node.bit
+
+    left_encoded = encode(character, node.left_child)
+    if left_encoded is not None:
+        return left_encoded
+
+    right_encoded = encode(character, node.right_child)
+    if right_encoded is not None:
+        return right_encoded
+
+    return None
+
+def huffman_encoding(data):
+    # first: Determine the frequency of each character in the message
+    frequency_overview = get_frequency(data)
+    #print(frequency_overview)
+    #initialize priority queue
+    priority_queue =  []
+    # initialize variable for solution
+    encoded_data = ""
+
+    # iterating through the tuples in the dict frequency_overview
+    for character,amount in frequency_overview.items():
+        # getting the key & value stored in character & amount
+        # creating nodes with the two values, children are NONE
+        node = Node(character, amount)
+        # using min-heap as suggested in the tasks desricption to keep a sorted list of the nodes
+        # heapush adds elements to heap
+        # name: priority_queue
+        # frequency & node are the objects added to the frequency_queue (ordered by frequency)
+        heapq.heappush(priority_queue, (amount, node))
+        # result: priority_queue is filled with all the original nodes from the frequency_overview
+    sorted_queue = sorted(priority_queue, key=lambda x: x[0])
+    for entry in sorted_queue:
+        amount, node = entry
+        #print("Character:", node.character)
+        #print("Amount:", node.amount)
+        #print("-----------------------------------------------------------------------------------------------------")
+
+    root_node = build_huffman_tree(sorted_queue)
+    #print(root_node.character)
+    #print(root_node.amount)
+    print_huffman_tree(root_node)
+
+    for character in data:
+        #print("Encoding startet for " + character)
+        encoded_character = encode(character, root_node)
+        #print(encoded_character)
+        if encoded_character is not None:
+            encoded_data += encoded_character
+    return encoded_data, root_node
+
+    pass
+
+#first result: 10110010100110111010
+############################################################################
+
+
+def huffman_decoding(data,tree):
+    decoded_strg = ""
+    current = tree
+    for bit in data:
+        if bit == "0":
+            current = current.left_child
+        else:
+            current = current.right_child
+
+        if current.has_character() == True:
+            decoded_strg += current.character
+            #print(decoded_strg)
+            current = tree
+    return decoded_strg
+
+
+if __name__ == "__main__":
+    codes = {}
+
+    a_great_sentence = "The bird is the word"
+
+    print ("The size of the data is: {}\n".format(sys.getsizeof(a_great_sentence)))
+    print ("The content of the data is: {}\n".format(a_great_sentence))
+
+    encoded_data, tree = huffman_encoding(a_great_sentence)
+
+    print ("The size of the encoded data is: {}\n".format(sys.getsizeof(int(encoded_data, base=2))))
+    print ("The content of the encoded data is: {}\n".format(encoded_data))
+
+    decoded_data = huffman_decoding(encoded_data, tree)
+
+    print ("The size of the decoded data is: {}\n".format(sys.getsizeof(decoded_data)))
+    print ("The content of the encoded data is: {}\n".format(decoded_data))
+
+## Add your own test cases: include at least three test cases
+## and two of them must include edge cases, such as null, empty or very large values
+
+## Test Case 1
+
+## Test Case 2
+
+## Test Case 3
